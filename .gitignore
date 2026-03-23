@@ -1,0 +1,23 @@
+# Python environment (Miniconda/Venv)
+env/
+venv/
+.env/
+conda-env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data & Large Files (Common in PyTorch)
+*.pth
+*.pt
+*.ckpt
+data/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+
