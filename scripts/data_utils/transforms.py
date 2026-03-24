@@ -1,3 +1,4 @@
+from PIL import Image
 from torchvision import transforms
 
 # ===================================================================
@@ -47,6 +48,12 @@ validate_transforms = transforms.Compose([
     )
 ])
 
+def apply_transforms(image_paths, transform):
+    imgs = []
+    for p in image_paths:
+        img = Image.open(p).convert("RGB")
+        imgs.append(transform(img))
+    return imgs
 # =========================================================
 # 🔬 OPTIONAL (FOR LATER EXPERIMENTATION)
 # =========================================================
