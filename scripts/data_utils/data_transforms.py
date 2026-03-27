@@ -15,7 +15,7 @@ train_transforms = transforms.Compose([
     transforms.Resize((224, 224)),  # larger size for better Grad-CAM resolution
 
     # --- GEOMETRIC (SAFE) ---
-    transforms.RandomHorizontalFlip(p=0.5),
+   # transforms.RandomHorizontalFlip(p=0.5),
     transforms.RandomRotation(degrees=10),
 
     # --- LIGHT POSITIONAL VARIATION ---
@@ -24,7 +24,7 @@ train_transforms = transforms.Compose([
             degrees=0,
             translate=(0.05, 0.05),   # reduced
             scale=(0.95, 1.05),       # tighter
-            shear=5                   # reduced
+            shear=2                   # reduced
         )
     ], p=0.3),
 
