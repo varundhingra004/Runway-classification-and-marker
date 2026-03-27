@@ -11,31 +11,38 @@ from torchvision import transforms
 
 train_transforms = transforms.Compose([
 
-    # GEOMETRIC AUGMENTATIONS
+    # Resize FIRST (keep consistent input)
+    transforms.Resize((224, 224)),  # larger size for better Grad-CAM resolution
 
-    transforms.Resize((224, 224)),
-    transforms.RandomHorizontalFlip(p = 0.5),
-    transforms.RandomRotation(degrees=15),
+    # --- GEOMETRIC (SAFE) ---
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=10),
 
-    # COLOR AUGMENTATIONS 
-
-    # LEARNINGS : Random apply method() randomly applies a list of transformations with the given probability p
+    # --- LIGHT POSITIONAL VARIATION ---
     transforms.RandomApply([
+        transforms.RandomAffine(
+            degrees=0,
+            translate=(0.05, 0.05),   # reduced
+            scale=(0.95, 1.05),       # tighter
+            shear=5                   # reduced
+        )
+    ], p=0.3),
 
-        #  LEARNINGS : ColorJitter method changes the brightness, contrast, saturation and hue.
+    # --- COLOR ---
+    transforms.RandomApply([
         transforms.ColorJitter(
             brightness=0.2,
             contrast=0.2,
             saturation=0.2,
             hue=0.05
         )
-    ], p = 0.3),
+    ], p=0.3),
 
-    #PREPROCESSING
+    # --- PREPROCESSING ---
     transforms.ToTensor(),
     transforms.Normalize(
-        mean = [0.485, 0.456, 0.406],
-        std = [0.229, 0.224, 0.225]
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
     ),
 ])
 
