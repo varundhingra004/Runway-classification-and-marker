@@ -1,9 +1,30 @@
-import torch
-from torch.utils.data import DataLoader
-from torchvision.datasets import ImageFolder
-from data_utils.data_transforms import train_transforms, validate_transforms
+import argparse
+import sys
+import time
 from collections import Counter
 from pathlib import Path
+
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
+
+from data_utils.data_transforms import train_transforms, validate_transforms
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train a runway classifir on the CPU")
+    parser.add_argument("--model", choices = ["resnet18", "vit"], default = "resnet18")
+    parser.add_argument("--vit-variant", choices = ["b16", "l14"], default = "b16")
+    parser.add_argument("--epochs", type = int, default = 10)
+    parser.add_argument("--learning-rate", type = float, default = 1e-3)
+    parser.add_argument("--batch-size", type=int, default=None, help="Default: 16 for resnet18, 4 for vit")
+    parser.add_argument("--num-workers", type = int, default = 2)
+    parser.add_argument("--checkpoint-dir", type=str, default="checkpoints")
+    return parser.parse_args()
+
+    
 
 def main() -> None:
     # Reproducibility
