@@ -24,7 +24,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint-dir", type=str, default="checkpoints")
     return parser.parse_args()
 
+
+def get_model(model_name: str, num_classes: int) -> nn.Module:
+    project_root = Path(__file__).resolve().parents[1]
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
     
+    if model_name == "resnet18":
+        from models.resnet18_model import get_resnet18_model
+        return get_resnet18_model(num_classes = 2, freeze_backbone = True)
 
 def main() -> None:
     # Reproducibility
