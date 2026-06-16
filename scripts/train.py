@@ -14,6 +14,13 @@ from torchvision.datasets import ImageFolder
 from data_utils.data_transforms import train_transforms, validate_transforms
 
 def parse_args() -> argparse.Namespace:
+    '''
+
+    Since there are multiple models to choose from, the model and the corresponding parametrs
+    will be configured in the comand line via the parser.
+
+    '''
+
     parser = argparse.ArgumentParser(description="Train a runway classifir on the CPU")
     parser.add_argument("--model", choices = ["resnet18", "vit"], default = "resnet18")
     parser.add_argument("--vit-variant", choices = ["b16", "l14"], default = "b16")
@@ -26,6 +33,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def get_model(model_name: str, num_classes: int) -> nn.Module:
+
+    '''
+    
+    Based on the parsed arguments in the command line, the appropriate model is chosen
+    and the corrsponding arguments are entered into the model.
+
+    '''
+
     project_root = Path(__file__).resolve().parents[1]
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
@@ -33,6 +48,44 @@ def get_model(model_name: str, num_classes: int) -> nn.Module:
     if model_name == "resnet18":
         from models.resnet18_model import get_resnet18_model
         return get_resnet18_model(num_classes = 2, freeze_backbone = True)
+
+def train_one_epoch(model, loader, criterion, optimizer):
+    '''
+
+    Train the model for a single epoch only. This function will be called multiple times by the main().
+
+    Step 1) Set the model to train.
+    Step 2) Loop over the batches from train_loader
+    Step 3) Clear all old gradients
+    Step 4) Run the forward pass, loss, backeard pass, optimizer step
+    Step 5) Track average loss and accuracy fir that epoch
+    Step 6) Return those metrics to main() for printing and checkpointing
+
+    '''
+
+    # step 1) Set the model into training mode.
+    # In  this mode, certail layers will act differently
+    # during the reaining phase. Like droput (deactivated for training), bacthnorm, etc.
+    model.train() 
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    # Step 2) Loop over the batches from the train_loader
+    for images, labels in loader:
+        optimizer.zero_grad() # Clear all gradients
+        outputs = model(images) # Forward pass
+        loss = criterion(output, labels) # Compute loss
+        loss.backward()
+        optimizer.step()
+
+        # Need to understand !!!!
+        running_loss += loss.item() * images.size(0)
+        correct += (outputs.argmax(dim=1) == labels).sum().item()
+        total += labels.size(0)
+    
+    return running_loss / total, correct / total
+
 
 def main() -> None:
     # Reproducibility
