@@ -49,7 +49,7 @@ def get_model(model_name: str, num_classes: int) -> nn.Module:
         from models.resnet18_model import get_resnet18_model
         return get_resnet18_model(num_classes = 2, freeze_backbone = True)
 
-def train_one_epoch(model, loader, criterion, optimizer):
+def train_one_epoch(model, loader, criterion, optimizer, device):
     '''
 
     Train the model for a single epoch only. This function will be called multiple times by the main().
@@ -73,9 +73,10 @@ def train_one_epoch(model, loader, criterion, optimizer):
 
     # Step 2) Loop over the batches from the train_loader
     for images, labels in loader:
+        images, labels = images.to(device), labels.to(device)
         optimizer.zero_grad() # Clear all gradients
         outputs = model(images) # Forward pass
-        loss = criterion(output, labels) # Compute loss
+        loss = criterion(outputs, labels) # Compute loss
         loss.backward()
         optimizer.step()
 
@@ -86,6 +87,29 @@ def train_one_epoch(model, loader, criterion, optimizer):
     
     return running_loss / total, correct / total
 
+@torch.no_grad()
+def evaluate(model, loader, criterion, device):
+    '''
+        Run the trained model on the Validation set and check the accuracy.
+        This means that there is no gradient tracking(hence the @torch.no_grad decorator)
+        and no backpropogation.
+    '''
+    model.eval()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    for images, labels in loader:
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+
+        # Need to understand !!!!
+        running_loss += loss.item() * images.size(0)
+        correct += (outputs.argmax(dim=1) == labels).sum().item()
+        total += labels.size(0)
+    
+    return running_loss / total, correct / total
 
 def main() -> None:
     # Reproducibility
@@ -129,6 +153,17 @@ def main() -> None:
     print("Image shape:", images.shape)
     print("Labels shape:", labels.shape)
 
+    args = parse_args()
+    model = get_model(args.model, num_classes = 2).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate)
+
+    # Enter the training loop. Call one_epoch multiple times
+    for epoch in range(1, args.epochs + 1):
+        train_loss, train_acc = train_one_epoch(model, train_data_loader, criterion, optimizer, device)
+        val_loss, val_acc = evaluate(model, validation_data_loader, criterion, device)
+        print(f"Epoch {epoch} | train acc {train_acc:.4f} | val acc {val_acc:.4f}")
+        # save best checkpoint
 
 if __name__ == "__main__":
     main()
