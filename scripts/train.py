@@ -11,6 +11,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 
+import random
+import matplotlib.pyplot as plt
+from torchvision import transforms
+
 from data_utils.data_transforms import train_transforms, validate_transforms
 
 def parse_args() -> argparse.Namespace:
@@ -111,6 +115,69 @@ def evaluate(model, loader, criterion, device):
     
     return running_loss / total, correct / total
 
+def tensor_to_image(tensor):
+    """Convert normalized model input back to a displayable image."""
+    inv_normalize = transforms.Normalize(
+        mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.225],
+        std=[1 / 0.229, 1 / 0.224, 1 / 0.225],
+    )
+    img = inv_normalize(tensor).clamp(0, 1)
+    return img.permute(1, 2, 0).numpy()
+
+@torch.no_grad
+def collect_validation_results(model, loader, device):
+    model.eval() # Set the neural network into evaluation mode. Dropout and batchnorm work properly
+    images_list = []
+    true_labels = []
+    pred_labels = []
+
+    for images, labels in loader:
+        images = images.to(device)
+        outputs = model(images)
+        preds = outputs.argmax(dim = 1)
+
+        # Transfer the images from the GPU to the CPU.
+        # In our case, we do not need to explitily transfer to the CPU because we are not using GPU for any processing.
+        # THis is just for learning.
+        images_list.append(images.cpu())
+        true_labels.extend(labels.tolist())
+        pred_labels.extend(preds.cpu().tolist())
+    
+    all_images = torch.cat(images_list, dim=0)
+    return all_images, true_labels, pred_labels
+
+def show_validation_results(images, true_labels, pred_labels, class_names, n=12, only_wrong=False):
+    indices = list(range(len(true_labels)))
+
+    if only_wrong:
+        indices = [i for i in indices if true_labels[i] != pred_labels[i]]
+
+    if len(indices) == 0:
+        print("No images to show.")
+        return
+
+    indices = random.sample(indices, min(n, len(indices)))
+
+    cols = 4
+    rows = (len(indices) + cols - 1) // cols
+    plt.figure(figsize=(14, 3 * rows))
+
+    for plot_idx, idx in enumerate(indices):
+        true_name = class_names[true_labels[idx]]
+        pred_name = class_names[pred_labels[idx]]
+        correct = true_name == pred_name
+
+        plt.subplot(rows, cols, plot_idx + 1)
+        plt.imshow(tensor_to_image(images[idx]))
+        plt.axis("off")
+
+        color = "green" if correct else "red"
+        plt.title(f"T: {true_name}\nP: {pred_name}", color=color, fontsize=9)
+
+    plt.tight_layout()
+    plt.show()
+
+
 def main() -> None:
     # Reproducibility
     torch.manual_seed(42)
@@ -164,6 +231,16 @@ def main() -> None:
         val_loss, val_acc = evaluate(model, validation_data_loader, criterion, device)
         print(f"Epoch {epoch} | train acc {train_acc:.4f} | val acc {val_acc:.4f}")
         print("save best checkpoint")
+    
+    # After the epoch loop finishes:
+    class_names = validation_data_set.classes   # ['no_runway', 'runway']
+    images, true_labels, pred_labels = collect_validation_results(model, validation_data_loader, device)
+
+    # Random mix of correct predictions
+    show_validation_results(images, true_labels, pred_labels, class_names, n=12)
+
+    # Only mistakes (very useful at 99% accuracy)
+    show_validation_results(images, true_labels, pred_labels, class_names, n=12, only_wrong=True)
 
 if __name__ == "__main__":
     main()
