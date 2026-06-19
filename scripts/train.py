@@ -163,7 +163,7 @@ def main() -> None:
         train_loss, train_acc = train_one_epoch(model, train_data_loader, criterion, optimizer, device)
         val_loss, val_acc = evaluate(model, validation_data_loader, criterion, device)
         print(f"Epoch {epoch} | train acc {train_acc:.4f} | val acc {val_acc:.4f}")
-        # save best checkpoint
+        print("save best checkpoint")
 
 if __name__ == "__main__":
     main()
