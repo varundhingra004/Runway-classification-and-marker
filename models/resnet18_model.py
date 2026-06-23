@@ -19,6 +19,7 @@ def get_resnet18_model(num_classes=2, freeze_backbone=True):
             # Learning : requires_grad is a parameter of the Parameters tensor that indicates if the parameter requires a gradient.
         
         # Unfreezing the final fully connected layer. 
+        # Learning : models.fc is the final fully connected layer. This final output layer  is found in all CNNs.
         for param in model.fc.parameters():
             param.requires_grad = True
         
